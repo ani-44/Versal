@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"><title>TicketHub Admin</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons/font/bootstrap-icons.css" rel="stylesheet">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+<div class="admin-topbar">
+  <div class="container" style="display:flex;justify-content:space-between;align-items:center;height:64px;">
+    <span class="admin-nav-logo">🎟 Ticket<span>Hub</span></span>
+    <a href="/admin/dashboard" class="btn-outline" style="color:#fff;border-color:rgba(255,255,255,0.3);padding:7px 14px;font-size:13px;">← Dashboard</a>
+  </div>
+</div>
+<div style="background:var(--cream);min-height:calc(100vh - 64px);padding:40px 0;">
+<div class="container">
+  <div style="max-width:600px;margin:0 auto;">
+    <div class="card card-body">
+      <span class="section-label">Admin</span>
+      <h2 class="font-serif" style="color:var(--navy);margin:6px 0 24px;">Add New Ticket</h2>
+      <form method="POST">
+        <div class="form-group">
+          <label class="form-label">Ticket Type</label>
+          <select name="type" class="form-select" required>
+            <option value="">— Select Type —</option>
+            <option value="BUS">🚌 Bus</option><option value="TRAIN">🚂 Train</option>
+            <option value="FLIGHT">✈️ Flight</option><option value="HOTEL">🏨 Hotel</option>
+            <option value="CONCERT">🎵 Concert</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Title</label>
+          <input type="text" name="title" class="form-control" placeholder="e.g. Delhi to Jaipur Volvo AC" required>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;">
+          <div class="form-group"><label class="form-label">Source</label><input type="text" name="source" class="form-control" placeholder="e.g. Delhi" required></div>
+          <div class="form-group"><label class="form-label">Destination</label><input type="text" name="destination" class="form-control" placeholder="e.g. Jaipur" required></div>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Travel / Event Date</label>
+          <input type="date" name="travel_date" class="form-control date-min-today" required>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px;margin-bottom:24px;">
+          <div class="form-group"><label class="form-label">Price (₹)</label><input type="number" name="price" class="form-control" placeholder="800" required></div>
+          <div class="form-group"><label class="form-label">Discount (%)</label><input type="number" name="discount" class="form-control" value="0" min="0" max="100"></div>
+          <div class="form-group"><label class="form-label">Total Seats</label><input type="number" name="total_seats" class="form-control" value="40" min="1"></div>
+        </div>
+        <button type="submit" class="btn-primary" style="width:100%;justify-content:center;padding:13px;"><i class="bi bi-plus-circle"></i> Add Ticket</button>
+      </form>
+    </div>
+  </div>
+</div>
+</div>
+<script>
+const today = new Date().toISOString().slice(0, 10);
+document.querySelectorAll('.date-min-today').forEach(input => {
+  input.min = today;
+  if (!input.value || input.value < today) input.value = today;
+});
+</script>
+</body>
+</html>

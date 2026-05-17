@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"><title>Manage Tickets | TicketHub Admin</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons/font/bootstrap-icons.css" rel="stylesheet">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+<div class="admin-topbar">
+  <div class="container" style="display:flex;justify-content:space-between;align-items:center;height:64px;">
+    <span class="admin-nav-logo">🎟 Ticket<span>Hub</span></span>
+    <a href="/admin/dashboard" class="btn-outline" style="color:#fff;border-color:rgba(255,255,255,0.3);padding:7px 14px;font-size:13px;">← Dashboard</a>
+  </div>
+</div>
+<div class="container" style="padding:32px 20px;">
+  <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;">
+    <h2 class="font-serif" style="color:var(--navy);">🎫 Manage Tickets</h2>
+    <a href="/admin/add-ticket" class="btn-primary"><i class="bi bi-plus-lg"></i> Add Ticket</a>
+  </div>
+  <div class="card">
+    <div style="overflow-x:auto;">
+      <table class="travelix-table">
+        <thead><tr><th>#</th><th>Type</th><th>Title</th><th>Route</th><th>Price</th><th>Discount</th><th>Seats</th><th style="text-align:right;">Actions</th></tr></thead>
+        <tbody>
+        {% for ticket in tickets %}
+        <tr>
+          <td>{{ loop.index }}</td>
+          <td><span class="badge badge-teal">{{ ticket.type }}</span></td>
+          <td style="font-weight:600;">{{ ticket.title }}</td>
+          <td style="color:var(--text-muted);font-size:13px;">{{ ticket.source }} → {{ ticket.destination }}</td>
+          <td style="color:var(--orange);font-weight:700;">₹{{ ticket.price }}</td>
+          <td>{{ ticket.discount }}%</td>
+          <td>{{ ticket.total_seats }}</td>
+          <td style="text-align:right;">
+            <a href="/admin/edit-ticket/{{ ticket.id }}" class="btn-warning" style="font-size:12px;padding:6px 12px;margin-right:4px;">Edit</a>
+            <a href="/admin/delete-ticket/{{ ticket.id }}" class="btn-danger" style="font-size:12px;padding:6px 12px;" onclick="return confirm('Delete?')">Delete</a>
+          </td>
+        </tr>
+        {% else %}
+        <tr><td colspan="8" style="text-align:center;padding:30px;color:var(--text-muted);">No tickets found.</td></tr>
+        {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+</body>
+</html>

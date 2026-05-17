@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"><title>Seat Selection | TicketHub</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons/font/bootstrap-icons.css" rel="stylesheet">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+<nav class="site-nav">
+  <div class="container">
+    <a href="/" class="nav-logo">🎟 Ticket<span>Hub</span></a>
+    <div class="nav-links" id="navLinks">
+      <a href="/dashboard">← Dashboard</a>
+      <a href="/logout" style="display:inline-flex;align-items:center;gap:5px;padding:7px 16px;border:1.5px solid #ef4444;border-radius:8px;color:#ef4444;font-size:13px;font-weight:600;text-decoration:none;transition:all 0.2s;margin-left:8px;">
+        <i class="bi bi-box-arrow-right"></i> Logout
+      </a>
+    </div>
+  </div>
+</nav>
+
+<div style="background:var(--cream);min-height:calc(100vh - 74px);padding:40px 0;">
+<div class="container">
+  <div style="display:grid;grid-template-columns:300px 1fr;gap:28px;align-items:start;">
+
+    <!-- TICKET INFO CARD -->
+    <div class="card card-body">
+      <span class="section-label">Ticket Info</span>
+      <h3 class="font-serif" style="color:var(--navy);font-size:1.2rem;margin:8px 0 14px;">{{ ticket.title }}</h3>
+      <span class="badge {% if ticket.type=='BUS' %}badge-success{% elif ticket.type=='TRAIN' %}badge-primary{% elif ticket.type=='FLIGHT' %}badge-teal{% elif ticket.type=='CONCERT' %}badge-danger{% else %}badge-warning{% endif %}" style="margin-bottom:14px;display:inline-block;">{{ ticket.type }}</span>
+      <div style="display:flex;flex-direction:column;gap:10px;margin-bottom:20px;">
+        <div style="display:flex;gap:10px;align-items:center;font-size:13px;">
+          <i class="bi bi-geo-alt" style="color:var(--orange);"></i>
+          <span style="color:var(--text-muted);">{{ ticket.source }} → {{ ticket.destination }}</span>
+        </div>
+        <div style="display:flex;gap:10px;align-items:center;font-size:13px;">
+          <i class="bi bi-people" style="color:var(--teal);"></i>
+          <span style="color:var(--text-muted);">{{ ticket.total_seats }} total seats</span>
+        </div>
+        <div style="display:flex;gap:10px;align-items:center;font-size:13px;">
+          <i class="bi bi-calendar3" style="color:var(--orange);"></i>
+          <span style="color:var(--text-muted);">{{ ticket.travel_date_label or ticket.travel_date or 'Date not set' }}</span>
+        </div>
+      </div>
+      <div style="background:var(--cream);border-radius:10px;padding:16px;text-align:center;border:1px solid var(--border);">
+        <div style="font-size:12px;color:var(--text-muted);margin-bottom:4px;">Price per seat</div>
+        {% if ticket.discount > 0 %}
+        <div style="font-size:12px;color:var(--text-muted);text-decoration:line-through;">₹{{ ticket.price|int }}</div>
+        <div class="font-serif" style="font-size:1.8rem;font-weight:700;color:var(--orange);">₹{{ (ticket.price - ticket.price*ticket.discount/100)|int }}</div>
+        <span style="background:var(--orange-light);color:var(--orange-dark);font-size:11px;font-weight:700;padding:3px 8px;border-radius:12px;">{{ ticket.discount }}% OFF</span>
+        {% else %}
+        <div class="font-serif" style="font-size:1.8rem;font-weight:700;color:var(--orange);">₹{{ ticket.price|int }}</div>
+        {% endif %}
+      </div>
+      <!-- Legend -->
+      <div style="margin-top:20px;display:flex;flex-direction:column;gap:8px;">
+        <div style="display:flex;align-items:center;gap:10px;font-size:13px;color:var(--text-muted);">
+          <span style="width:20px;height:20px;background:var(--cream);border:1.5px solid var(--border);border-radius:4px;display:inline-block;"></span> Available
+        </div>
+        <div style="display:flex;align-items:center;gap:10px;font-size:13px;color:var(--text-muted);">
+          <span style="width:20px;height:20px;background:var(--orange);border-radius:4px;display:inline-block;"></span> Selected
+        </div>
+        <div style="display:flex;align-items:center;gap:10px;font-size:13px;color:var(--text-muted);">
+          <span style="width:20px;height:20px;background:#fee2e2;border:1.5px solid #fca5a5;border-radius:4px;display:inline-block;"></span> Booked
+        </div>
+      </div>
+    </div>
+
+    <!-- SEAT MAP -->
+    <div class="card card-body">
+      <span class="section-label">Select Seat</span>
+      <h3 class="font-serif" style="color:var(--navy);font-size:1.2rem;margin:8px 0 24px;">Click to choose your seat</h3>
+      <div class="seat-map" id="seatMap">
+        {% for i in range(1, ticket.total_seats + 1) %}
+        <button class="seat-btn {% if i|string in booked_seats %}booked{% endif %}"
+          data-seat="{{ i }}" {% if i|string in booked_seats %}disabled{% endif %}
+          onclick="selectSeat(this, '{{ i }}')">{{ i }}</button>
+        {% endfor %}
+      </div>
+
+      <div id="selectedInfo" style="display:none;margin-top:24px;">
+        <div style="background:var(--orange-light);border:1.5px solid var(--orange);border-radius:12px;padding:16px;text-align:center;">
+          <div style="font-size:12px;color:var(--orange-dark);text-transform:uppercase;letter-spacing:1px;margin-bottom:4px;">Selected</div>
+          <div class="font-serif" style="font-size:2rem;font-weight:700;color:var(--orange);" id="selectedSeatNum">—</div>
+        </div>
+      </div>
+
+      <form action="/select-seat" method="POST" style="margin-top:20px;">
+        <input type="hidden" name="seat_number" id="seat_number">
+        <button type="submit" id="proceedBtn" class="btn-primary" style="width:100%;justify-content:center;padding:14px;" disabled>
+          <i class="bi bi-arrow-right-circle"></i> Proceed to Payment
+        </button>
+      </form>
+    </div>
+  </div>
+</div>
+</div>
+
+<script>
+function selectSeat(btn, num) {
+  document.querySelectorAll('.seat-btn.selected').forEach(b => b.classList.remove('selected'));
+  btn.classList.add('selected');
+  document.getElementById('seat_number').value = num;
+  document.getElementById('selectedSeatNum').textContent = 'Seat ' + num;
+  document.getElementById('selectedInfo').style.display = 'block';
+  document.getElementById('proceedBtn').disabled = false;
+}
+</script>
+</body>
+</html>

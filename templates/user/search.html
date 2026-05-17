@@ -1,0 +1,1113 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Live Search | TicketHub</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons/font/bootstrap-icons.css" rel="stylesheet">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+  <style>
+    :root {
+      --bus:     linear-gradient(135deg,#065f46,#10b981);
+      --train:   linear-gradient(135deg,#1e40af,#3b82f6);
+      --flight:  linear-gradient(135deg,#135f6d,#1a7a8a);
+      --hotel:   linear-gradient(135deg,#92400e,#f59e0b);
+      --concert: linear-gradient(135deg,#9d174d,#ec4899);
+    }
+
+    /* ── PAGE HERO ── */
+    .search-hero {
+      background: linear-gradient(135deg, #0b1c4d 0%, #1a3a8f 60%, #0d5c6e 100%);
+      padding: 80px 0 120px;
+      text-align: center;
+    }
+    .search-hero h1 { color:#fff; font-size:2.6rem; margin-bottom:10px; }
+    .search-hero p  { color:rgba(255,255,255,.65); font-size:1.05rem; }
+
+    /* ── SEARCH WIDGET ── */
+    .sw-wrap { margin-top:-70px; position:relative; z-index:20; }
+    .sw-card {
+      background:#fff;
+      border-radius:18px;
+      box-shadow:0 8px 48px rgba(26,46,68,.18);
+      overflow:hidden;
+    }
+
+    /* Tabs */
+    .sw-tabs {
+      display:flex; border-bottom:1px solid #eee;
+      overflow-x:auto; -webkit-overflow-scrolling:touch; scrollbar-width:none;
+    }
+    .sw-tabs::-webkit-scrollbar { display:none; }
+    .sw-tab {
+      flex:none; display:flex; align-items:center; gap:8px;
+      padding:16px 26px; font-size:14px; font-weight:600; color:#888;
+      cursor:pointer; border:none; background:none;
+      border-bottom:3px solid transparent; margin-bottom:-1px;
+      transition:all .2s; white-space:nowrap;
+    }
+    .sw-tab i { font-size:18px; }
+    .sw-tab.active  { color:#e8671a; border-bottom-color:#e8671a; }
+    .sw-tab:hover:not(.active) { color:#444; }
+
+    /* Form */
+    .sw-form {
+      display:grid;
+      grid-template-columns:1fr 1fr 1fr auto;
+      gap:0; padding:24px 28px 28px; align-items:end;
+    }
+    .sw-form.hotel-form  { grid-template-columns:1fr 1fr auto; }
+    .sw-form.event-form  { grid-template-columns:1fr 1fr 1fr auto; }
+
+    .sw-field { padding:0 16px 0 0; }
+    .sw-field:not(:last-child) { border-right:1px solid #eee; margin-right:16px; }
+    .sw-field label {
+      display:block; font-size:11px; font-weight:700;
+      color:#999; text-transform:uppercase; letter-spacing:1.2px;
+      margin-bottom:8px;
+    }
+    .sw-field input, .sw-field select {
+      width:100%; border:1.5px solid #e8ddd0; border-radius:8px;
+      padding:11px 14px; font-size:14px; color:#2d2d2d;
+      background:#fdf8f3; outline:none;
+      transition:border-color .2s, box-shadow .2s;
+    }
+    .sw-field input:focus, .sw-field select:focus {
+      border-color:#e8671a;
+      box-shadow:0 0 0 3px rgba(232,103,26,.1);
+      background:#fff;
+    }
+    .sw-field input::placeholder { color:#bbb; }
+
+    .sw-btn {
+      background:linear-gradient(135deg,#e8671a,#f97316);
+      color:#fff; border:none; border-radius:10px;
+      padding:12px 32px; font-size:15px; font-weight:700;
+      cursor:pointer; white-space:nowrap;
+      transition:opacity .2s, transform .15s;
+      display:flex; align-items:center; gap:8px;
+    }
+    .sw-btn:hover  { opacity:.9; transform:translateY(-1px); }
+    .sw-btn:active { transform:translateY(0); }
+    .sw-btn:disabled { opacity:.6; cursor:not-allowed; transform:none; }
+
+    /* ── RESULTS SECTION ── */
+    .results-wrap { padding:48px 0 80px; }
+
+    .results-header {
+      display:flex; justify-content:space-between; align-items:center;
+      margin-bottom:24px;
+    }
+    .results-header h2 { font-size:1.3rem; color:#0b1c4d; margin:0; }
+    .result-count { font-size:13px; color:#888; }
+
+    /* Result cards */
+    .result-grid {
+      display:grid;
+      grid-template-columns:repeat(auto-fill,minmax(300px,1fr));
+      gap:22px;
+    }
+
+    .result-card {
+      border-radius:14px; overflow:hidden;
+      box-shadow:0 2px 18px rgba(0,0,0,.08);
+      background:#fff;
+      transition:transform .2s, box-shadow .2s;
+      display:flex; flex-direction:column;
+    }
+    .result-card:hover {
+      transform:translateY(-4px);
+      box-shadow:0 8px 32px rgba(0,0,0,.14);
+    }
+    .result-card.featured { border:2px solid #e8671a; }
+
+    .rc-banner {
+      height:80px; display:flex; align-items:center;
+      justify-content:space-between; padding:0 20px;
+      position:relative;
+    }
+    .rc-icon { font-size:2.4rem; }
+    .featured-badge {
+      position:absolute; top:10px; right:10px;
+      background:#e8671a; color:#fff;
+      font-size:10px; font-weight:700;
+      padding:3px 10px; border-radius:20px;
+      text-transform:uppercase; letter-spacing:.8px;
+    }
+
+    .rc-body { padding:18px 20px 20px; flex:1; display:flex; flex-direction:column; }
+    .rc-type {
+      font-size:10px; font-weight:700; letter-spacing:1.5px;
+      text-transform:uppercase; margin-bottom:8px;
+      color:#e8671a;
+    }
+    .rc-title {
+      font-size:.95rem; font-weight:700; color:#0b1c4d;
+      margin-bottom:8px; line-height:1.4;
+      display:-webkit-box; -webkit-line-clamp:2;
+      -webkit-box-orient:vertical; overflow:hidden;
+    }
+    .rc-snippet {
+      font-size:.82rem; color:#666; line-height:1.5;
+      flex:1; margin-bottom:14px;
+      display:-webkit-box; -webkit-line-clamp:3;
+      -webkit-box-orient:vertical; overflow:hidden;
+    }
+    .rc-route {
+      font-size:.78rem; color:#aaa; margin-bottom:12px;
+    }
+    .rc-footer { margin-top:auto; }
+    .rc-link {
+      display:inline-flex; align-items:center; gap:6px;
+      background:linear-gradient(135deg,#e8671a,#f97316);
+      color:#fff; text-decoration:none;
+      padding:9px 18px; border-radius:8px;
+      font-size:13px; font-weight:600;
+      transition:opacity .2s;
+      width:100%; justify-content:center;
+    }
+    .rc-link:hover { opacity:.88; color:#fff; }
+
+    /* ── STATES ── */
+    .search-empty {
+      text-align:center; padding:80px 20px; grid-column:1/-1;
+    }
+    .search-empty i { font-size:3.5rem; color:#ccc; display:block; margin-bottom:16px; }
+    .search-empty p { color:#999; font-size:1rem; }
+
+    .loading-grid {
+      display:grid;
+      grid-template-columns:repeat(auto-fill,minmax(300px,1fr));
+      gap:22px;
+    }
+    .skeleton {
+      background:#fff; border-radius:14px;
+      box-shadow:0 2px 18px rgba(0,0,0,.06);
+      overflow:hidden;
+    }
+    .sk-banner { height:80px; background:linear-gradient(90deg,#f0f0f0 25%,#e8e8e8 50%,#f0f0f0 75%); background-size:200% 100%; animation:shimmer 1.4s infinite; }
+    .sk-body   { padding:18px 20px; }
+    .sk-line   { height:12px; border-radius:6px; margin-bottom:10px; background:linear-gradient(90deg,#f0f0f0 25%,#e8e8e8 50%,#f0f0f0 75%); background-size:200% 100%; animation:shimmer 1.4s infinite; }
+    .sk-line.w80 { width:80%; }
+    .sk-line.w60 { width:60%; }
+    .sk-line.w40 { width:40%; height:36px; border-radius:8px; margin-top:14px; }
+    @keyframes shimmer { 0%{background-position:200% 0} 100%{background-position:-200% 0} }
+
+    /* ── RECENT SEARCHES ── */
+    .recent-chips { display:flex; flex-wrap:wrap; gap:8px; margin-bottom:18px; }
+    .chip {
+      background:#fdf8f3; border:1.5px solid #e8ddd0;
+      border-radius:20px; padding:6px 14px;
+      font-size:12px; color:#555; cursor:pointer;
+      transition:all .2s; display:flex; align-items:center; gap:6px;
+    }
+    .chip:hover { background:#e8671a; color:#fff; border-color:#e8671a; }
+
+    /* ── NAVBAR ── */
+    .topbar { background:#fff; border-bottom:1px solid #eee; padding:8px 0; font-size:13px; }
+    .site-nav { background:#fff; box-shadow:0 2px 8px rgba(0,0,0,.06); position:sticky; top:0; z-index:100; }
+    .site-nav .container { display:flex; justify-content:space-between; align-items:center; padding:16px 24px; }
+    .nav-logo { font-size:1.4rem; font-weight:800; color:#0b1c4d; text-decoration:none; }
+    .nav-logo span { color:#e8671a; }
+    .nav-links { display:flex; align-items:center; gap:24px; }
+    .nav-links a { color:#555; text-decoration:none; font-size:14px; font-weight:500; }
+    .nav-links a:hover { color:#e8671a; }
+
+    @media(max-width:700px) {
+      .sw-form { grid-template-columns:1fr!important; padding:18px; }
+      .sw-field { border-right:none!important; margin-right:0!important; margin-bottom:14px; padding:0; }
+      .search-hero h1 { font-size:1.8rem; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- TOPBAR -->
+<div class="topbar">
+  <div class="container" style="display:flex;justify-content:space-between;align-items:center;">
+    <span><i class="bi bi-telephone me-1"></i> +91 98765 43210 &nbsp;|&nbsp; <i class="bi bi-envelope me-1"></i> support@tickethub.com</span>
+    {% if session.user_name %}
+    <span>Welcome, <strong>{{ session.user_name }}</strong>! 👋</span>
+    {% else %}
+    <span><a href="/login" style="color:#e8671a;text-decoration:none;font-weight:600;">Login</a> or <a href="/signup" style="color:#e8671a;text-decoration:none;font-weight:600;">Sign Up</a></span>
+    {% endif %}
+  </div>
+</div>
+
+<!-- NAVBAR -->
+<nav class="site-nav">
+  <div class="container">
+    <a href="/" class="nav-logo">🎟 Ticket<span>Hub</span></a>
+    <div class="nav-links">
+      <a href="/"><i class="bi bi-house me-1"></i>Home</a>
+      {% if session.user_id %}
+      <a href="/dashboard"><i class="bi bi-grid me-1"></i>Dashboard</a>
+      <a href="/logout" style="color:#ef4444;"><i class="bi bi-box-arrow-right me-1"></i>Logout</a>
+      {% else %}
+      <a href="/login"><i class="bi bi-person me-1"></i>Login</a>
+      {% endif %}
+    </div>
+  </div>
+</nav>
+
+<!-- HERO -->
+<section class="search-hero">
+  <div class="container">
+    <p style="color:#f97316;font-size:12px;font-weight:700;letter-spacing:3px;text-transform:uppercase;margin-bottom:12px;">
+      Powered by Google Search
+    </p>
+    <h1>🔍 Find Real Tickets Instantly</h1>
+    <p>Search buses, flights, trains, hotels & concerts — live results from across the web</p>
+  </div>
+</section>
+
+<!-- SEARCH WIDGET -->
+<div class="container sw-wrap">
+  <div class="sw-card">
+
+    <!-- TABS -->
+    <div class="sw-tabs" id="swTabs">
+      <button class="sw-tab active" data-type="bus"     onclick="switchTab(this)"><i class="bi bi-bus-front"></i> Bus</button>
+      <button class="sw-tab"        data-type="flight"  onclick="switchTab(this)"><i class="bi bi-airplane"></i> Flight</button>
+      <button class="sw-tab"        data-type="train"   onclick="switchTab(this)"><i class="bi bi-train-front"></i> Train</button>
+      <button class="sw-tab"        data-type="hotel"   onclick="switchTab(this)"><i class="bi bi-building"></i> Hotel</button>
+      <button class="sw-tab"        data-type="concert" onclick="switchTab(this)"><i class="bi bi-music-note-beamed"></i> Concert</button>
+    </div>
+
+    <!-- FORMS (one per type, hidden/shown) -->
+
+    <!-- BUS / FLIGHT / TRAIN (shared layout) -->
+    <div class="sw-form" id="form-bus">
+      <div class="sw-field">
+        <label><i class="bi bi-geo-alt me-1"></i>From</label>
+        <input type="text" id="bus-from" placeholder="e.g. Delhi">
+      </div>
+      <div class="sw-field">
+        <label><i class="bi bi-geo-alt-fill me-1"></i>To</label>
+        <input type="text" id="bus-to" placeholder="e.g. Patna">
+      </div>
+      <div class="sw-field">
+        <label><i class="bi bi-calendar3 me-1"></i>Date</label>
+        <input type="date" id="bus-date" required>
+      </div>
+      <button class="sw-btn" onclick="doSearch('bus')"><i class="bi bi-search"></i> Search</button>
+    </div>
+
+    <div class="sw-form" id="form-flight" style="display:none;">
+      <div class="sw-field">
+        <label><i class="bi bi-airplane-engines me-1"></i>From</label>
+        <input type="text" id="flight-from" placeholder="e.g. Delhi">
+      </div>
+      <div class="sw-field">
+        <label><i class="bi bi-geo-alt-fill me-1"></i>To</label>
+        <input type="text" id="flight-to" placeholder="e.g. Mumbai">
+      </div>
+      <div class="sw-field">
+        <label><i class="bi bi-calendar3 me-1"></i>Date</label>
+        <input type="date" id="flight-date" required>
+      </div>
+      <button class="sw-btn" onclick="doSearch('flight')"><i class="bi bi-search"></i> Search</button>
+    </div>
+
+    <div class="sw-form" id="form-train" style="display:none;">
+      <div class="sw-field">
+        <label><i class="bi bi-train-front me-1"></i>From</label>
+        <input type="text" id="train-from" placeholder="e.g. Patna">
+      </div>
+      <div class="sw-field">
+        <label><i class="bi bi-geo-alt-fill me-1"></i>To</label>
+        <input type="text" id="train-to" placeholder="e.g. Delhi">
+      </div>
+      <div class="sw-field">
+        <label><i class="bi bi-calendar3 me-1"></i>Date</label>
+        <input type="date" id="train-date" required>
+      </div>
+      <button class="sw-btn" onclick="doSearch('train')"><i class="bi bi-search"></i> Search</button>
+    </div>
+
+    <div class="sw-form hotel-form" id="form-hotel" style="display:none;">
+      <div class="sw-field">
+        <label><i class="bi bi-building me-1"></i>City / Destination</label>
+        <input type="text" id="hotel-city" placeholder="e.g. Mumbai">
+      </div>
+      <div class="sw-field">
+        <label><i class="bi bi-calendar3 me-1"></i>Check-in Date</label>
+        <input type="date" id="hotel-checkin" required>
+      </div>
+      <button class="sw-btn" onclick="doSearch('hotel')"><i class="bi bi-search"></i> Search</button>
+    </div>
+
+    <div class="sw-form event-form" id="form-concert" style="display:none;">
+      <div class="sw-field">
+        <label><i class="bi bi-music-note-beamed me-1"></i>Artist / Event</label>
+        <input type="text" id="concert-keyword" placeholder="e.g. Arijit Singh, EDM, Festival">
+      </div>
+      <div class="sw-field">
+        <label><i class="bi bi-geo-alt me-1"></i>City</label>
+        <input type="text" id="concert-city" placeholder="e.g. Delhi, Mumbai">
+      </div>
+      <div class="sw-field">
+        <label><i class="bi bi-calendar-event me-1"></i>Event Date</label>
+        <input type="date" id="concert-date" required>
+      </div>
+      <button class="sw-btn" onclick="doSearch('concert')"><i class="bi bi-search"></i> Search</button>
+    </div>
+
+  </div>
+</div>
+
+<!-- RESULTS -->
+<div class="container results-wrap">
+
+  <!-- Recent / Quick searches -->
+  <div id="quickSection">
+    <p style="font-size:13px;color:#aaa;margin-bottom:10px;font-weight:600;text-transform:uppercase;letter-spacing:1px;">
+      Popular Searches
+    </p>
+    <div class="recent-chips">
+      <span class="chip" onclick="quickSearch('bus','Delhi','Patna')">🚌 Delhi → Patna</span>
+      <span class="chip" onclick="quickSearch('flight','Delhi','Mumbai')">✈️ Delhi → Mumbai</span>
+      <span class="chip" onclick="quickSearch('bus','Mumbai','Goa')">🚌 Mumbai → Goa</span>
+      <span class="chip" onclick="quickSearch('hotel','','Goa')">🏨 Hotels in Goa</span>
+      <span class="chip" onclick="quickSearch('concert','Arijit Singh','Mumbai')">🎵 Arijit Singh Mumbai</span>
+      <span class="chip" onclick="quickSearch('train','Bangalore','Chennai')">🚂 Bangalore → Chennai</span>
+      <span class="chip" onclick="quickSearch('flight','Delhi','Bangalore')">✈️ Delhi → Bangalore</span>
+      <span class="chip" onclick="quickSearch('hotel','','Jaipur')">🏨 Hotels in Jaipur</span>
+    </div>
+  </div>
+
+  <!-- Loading skeleton -->
+  <div id="loadingSection" style="display:none;">
+    <div class="results-header">
+      <h2>Searching the web...</h2>
+      <span class="result-count">Please wait</span>
+    </div>
+    <div class="loading-grid">
+      <div class="skeleton"><div class="sk-banner"></div><div class="sk-body"><div class="sk-line w80"></div><div class="sk-line w60"></div><div class="sk-line"></div><div class="sk-line w40"></div></div></div>
+      <div class="skeleton"><div class="sk-banner"></div><div class="sk-body"><div class="sk-line w80"></div><div class="sk-line w60"></div><div class="sk-line"></div><div class="sk-line w40"></div></div></div>
+      <div class="skeleton"><div class="sk-banner"></div><div class="sk-body"><div class="sk-line w80"></div><div class="sk-line w60"></div><div class="sk-line"></div><div class="sk-line w40"></div></div></div>
+    </div>
+  </div>
+
+  <!-- Results grid -->
+  <div id="resultsSection" style="display:none;">
+    <div class="results-header">
+      <h2 id="resultsTitle">Search Results</h2>
+      <span class="result-count" id="resultsCount">0 results</span>
+    </div>
+    <div class="result-grid" id="resultsGrid"></div>
+  </div>
+
+  <!-- Error -->
+  <div id="errorSection" style="display:none;">
+    <div style="text-align:center;padding:60px 20px;">
+      <i class="bi bi-exclamation-triangle" style="font-size:3rem;color:#ef4444;display:block;margin-bottom:16px;"></i>
+      <h3 style="color:#0b1c4d;margin-bottom:8px;">Search Failed</h3>
+      <p id="errorMsg" style="color:#888;">Something went wrong. Please try again.</p>
+      <button onclick="location.reload()" style="margin-top:16px;padding:10px 24px;background:#e8671a;color:#fff;border:none;border-radius:8px;cursor:pointer;font-weight:600;">Retry</button>
+    </div>
+  </div>
+
+</div>
+
+<!-- FOOTER -->
+<footer style="background:#0b1c4d;padding:24px 0;text-align:center;">
+  <p style="color:rgba(255,255,255,.4);font-size:12px;margin:0;">© 2026 TicketHub — Live Search Powered by Serper.dev</p>
+</footer>
+
+<script>
+let currentTab = 'bus';
+let activeSearchToken = 0;
+const chatMemory = {
+  searches: [],
+  lastSearch: null,
+  lastAIRecommendation: null,
+};
+
+function todayISO() {
+  const d = new Date();
+  d.setMinutes(d.getMinutes() - d.getTimezoneOffset());
+  return d.toISOString().slice(0, 10);
+}
+
+function setupDateInputs() {
+  const today = todayISO();
+  ['bus-date', 'flight-date', 'train-date', 'hotel-checkin', 'concert-date'].forEach(id => {
+    const input = document.getElementById(id);
+    if (!input) return;
+    input.min = today;
+    if (!input.value || input.value < today) input.value = today;
+  });
+}
+
+function clearSearchUI() {
+  const ai = document.getElementById('aiBanner');
+  if (ai) ai.remove();
+  document.getElementById('quickSection').style.display   = '';
+  document.getElementById('resultsSection').style.display = 'none';
+  document.getElementById('loadingSection').style.display = 'none';
+  document.getElementById('errorSection').style.display   = 'none';
+  const grid = document.getElementById('resultsGrid');
+  if (grid) grid.innerHTML = '';
+}
+
+/* ── Tab switching ── */
+function switchTab(btn) {
+  document.querySelectorAll('.sw-tab').forEach(t => t.classList.remove('active'));
+  btn.classList.add('active');
+  currentTab = btn.dataset.type;
+
+  // Hide all forms
+  ['bus','flight','train','hotel','concert'].forEach(t => {
+    const f = document.getElementById('form-' + t);
+    if (f) f.style.display = 'none';
+  });
+  document.getElementById('form-' + currentTab).style.display = '';
+
+  // When user changes section, clear previous section's results immediately.
+  clearSearchUI();
+}
+
+/* ── Quick / Popular searches ── */
+function quickSearch(type, source, destination) {
+  // Switch tab
+  const tab = document.querySelector(`.sw-tab[data-type="${type}"]`);
+  if (tab) switchTab(tab);
+
+  // Fill in fields
+  if (type === 'bus' || type === 'flight' || type === 'train') {
+    document.getElementById(type + '-from').value = source;
+    document.getElementById(type + '-to').value   = destination;
+    document.getElementById(type + '-date').value = todayISO();
+  } else if (type === 'hotel') {
+    document.getElementById('hotel-city').value = destination;
+    document.getElementById('hotel-checkin').value = todayISO();
+  } else if (type === 'concert') {
+    document.getElementById('concert-keyword').value = source;
+    document.getElementById('concert-city').value    = destination;
+    document.getElementById('concert-date').value    = todayISO();
+  }
+  doSearch(type);
+}
+
+/* ── Main search ── */
+async function doSearch(type) {
+  // Ensure the request always follows currently selected tab.
+  type = currentTab;
+  let body = { type };
+  const searchToken = ++activeSearchToken;
+
+  if (type === 'bus' || type === 'flight' || type === 'train') {
+    body.source      = document.getElementById(type + '-from').value.trim();
+    body.destination = document.getElementById(type + '-to').value.trim();
+    body.date        = document.getElementById(type + '-date').value;
+    if (!body.source && !body.destination) {
+      alert('Please enter at least a From or To city.');
+      return;
+    }
+    if (!body.date) { alert('Please select a date.'); return; }
+  } else if (type === 'hotel') {
+    body.destination = document.getElementById('hotel-city').value.trim();
+    body.date        = document.getElementById('hotel-checkin').value;
+    if (!body.destination) { alert('Please enter a city.'); return; }
+    if (!body.date) { alert('Please select a check-in date.'); return; }
+  } else if (type === 'concert') {
+    body.keyword     = document.getElementById('concert-keyword').value.trim();
+    body.destination = document.getElementById('concert-city').value.trim();
+    body.date        = document.getElementById('concert-date').value;
+    if (!body.keyword && !body.destination) { alert('Please enter an artist/event or city.'); return; }
+    if (!body.date) { alert('Please select an event date.'); return; }
+  }
+
+  // Show loading
+  document.getElementById('quickSection').style.display    = 'none';
+  document.getElementById('loadingSection').style.display  = '';
+  document.getElementById('resultsSection').style.display  = 'none';
+  document.getElementById('errorSection').style.display    = 'none';
+
+  try {
+    const res  = await fetch('/api/serper-search', {
+      method:  'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body:    JSON.stringify(body),
+    });
+    const data = await res.json();
+    if (searchToken !== activeSearchToken) return; // stale response from previous tab/search
+
+    document.getElementById('loadingSection').style.display = 'none';
+
+    if (data.error) {
+      document.getElementById('errorMsg').textContent = data.error;
+      document.getElementById('errorSection').style.display = '';
+      return;
+    }
+
+    storeSearchInChatMemory(type, body, data);
+    await renderResults(data, type);
+    fetchAISuggestion(type, body, data);
+
+  } catch (err) {
+    if (searchToken !== activeSearchToken) return; // stale response from previous tab/search
+    document.getElementById('loadingSection').style.display = 'none';
+    document.getElementById('errorMsg').textContent = 'Network error: ' + err.message;
+    document.getElementById('errorSection').style.display = '';
+  }
+}
+
+/* ── AI Best Price Suggestion ── */
+function storeSearchInChatMemory(type, body, data) {
+  const entry = {
+    type: type,
+    body: { ...body },
+    query: { ...(data.query || {}) },
+    results: Array.isArray(data.results) ? data.results : [],
+    count: Number(data.count || 0),
+    created_at: new Date().toISOString(),
+  };
+  chatMemory.lastSearch = entry;
+  chatMemory.searches.push(entry);
+  if (chatMemory.searches.length > 20) chatMemory.searches.shift();
+}
+
+function _toNumber(v, fallback = 0) {
+  const n = Number(v);
+  return Number.isFinite(n) ? n : fallback;
+}
+
+function buildLiveCandidatesForAI(type, body, liveData) {
+  const out = [];
+  const src = (body.source || '').trim();
+  const dst = (body.destination || body.keyword || '').trim();
+  const normalizedType = String(type || '').toUpperCase();
+  const seen = new Set();
+
+  const liveResults = Array.isArray(liveData && liveData.results) ? liveData.results : [];
+  liveResults.forEach((r, idx) => {
+    const price = _toNumber(r.price, NaN);
+    const finalPrice = _toNumber(r.final_price, NaN);
+    const discount = _toNumber(r.discount, 0);
+    if (!Number.isFinite(price) && !Number.isFinite(finalPrice)) return;
+    const resolvedPrice = Number.isFinite(price) ? price : finalPrice;
+    const resolvedFinal = Number.isFinite(finalPrice)
+      ? finalPrice
+      : Math.max(1, Math.round(resolvedPrice * (1 - discount / 100)));
+    const key = `${(r.title || '').toLowerCase()}|${resolvedFinal}`;
+    if (seen.has(key)) return;
+    seen.add(key);
+    out.push({
+      id: r.id || `live-${idx + 1}`,
+      title: r.title || `${normalizedType} option ${idx + 1}`,
+      type: r.type || normalizedType,
+      source: r.source || src,
+      destination: r.destination || dst,
+      price: resolvedPrice,
+      discount: discount,
+      final_price: resolvedFinal,
+      total_seats: _toNumber(r.total_seats, 0),
+    });
+  });
+
+  const cacheKey = _cacheKey(normalizedType, body.source || '', body.destination || '', body.date || '');
+  const cached = _dbTicketCache[cacheKey] || [];
+  cached.forEach((t, idx) => {
+    const price = _toNumber(t.price, 0);
+    const discount = _toNumber(t.discount, 0);
+    const finalPrice = _toNumber(t.final_price, Math.round(price * (1 - discount / 100)));
+    if (finalPrice <= 0) return;
+    const key = `${(t.title || '').toLowerCase()}|${finalPrice}`;
+    if (seen.has(key)) return;
+    seen.add(key);
+    out.push({
+      id: t.id || `db-${idx + 1}`,
+      title: t.title || `${normalizedType} ticket ${idx + 1}`,
+      type: t.type || normalizedType,
+      source: t.source || src,
+      destination: t.destination || dst,
+      price: price,
+      discount: discount,
+      final_price: finalPrice,
+      total_seats: _toNumber(t.total_seats, 0),
+    });
+  });
+  return out;
+}
+
+async function fetchAISuggestion(type, body, liveData = null) {
+  // Remove any stale AI banner
+  const existing = document.getElementById('aiBanner');
+  if (existing) existing.remove();
+
+  // Show a loading placeholder so the user knows AI is working
+  const placeholder = document.createElement('div');
+  placeholder.id = 'aiBanner';
+  placeholder.innerHTML = `
+    <div style="background:linear-gradient(135deg,#eff6ff,#e0f2fe);border:1.5px solid #93c5fd;border-radius:12px;padding:12px 18px;margin-bottom:18px;display:flex;gap:12px;align-items:center;opacity:.7;">
+      <span style="font-size:1.6rem;">🤖</span>
+      <span style="color:#3b82f6;font-size:.9rem;font-weight:600;">AI is analysing best options for you…</span>
+    </div>`;
+  const grid = document.getElementById('resultsGrid');
+  if (grid) grid.insertAdjacentElement('beforebegin', placeholder);
+
+  // Build smart prefs from what the user actually searched
+  const dest   = (body.destination || body.keyword || '').trim();
+  const src    = (body.source || '').trim();
+  const candidates = buildLiveCandidatesForAI(type, body, liveData || chatMemory.lastSearch || {});
+  const maxPrice = candidates.length > 0
+    ? Math.max(...candidates.map(t => _toNumber(t.final_price, 0))) * 1.2
+    : 10000;
+
+  try {
+    let res = await fetch('/ai/best-plan-from-results', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        prefer_best_price: true,
+        candidates: candidates,
+        prefs: {
+          interests: [type.toUpperCase()],
+          budget: Math.round(maxPrice),
+          destination: dest || src,
+          source: src,
+        },
+      }),
+    });
+    if (!res.ok) {
+      const params = new URLSearchParams({
+        interests:   type.toUpperCase(),
+        budget:      Math.round(maxPrice).toString(),
+        destination: dest || src,
+        source:      src,
+      });
+      res = await fetch(`/ai/best-plan?${params}`);
+    }
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    const ai   = await res.json();
+    const pick = ai.best_plan;
+
+    // Remove placeholder
+    const ph = document.getElementById('aiBanner');
+    if (ph) ph.remove();
+
+    if (!pick) return;
+    chatMemory.lastAIRecommendation = {
+      pick: pick,
+      ai_reason: ai.ai_reason || '',
+      created_at: new Date().toISOString(),
+    };
+
+    // Score bar
+    const scoreWidth = Math.round(pick.score || 0);
+    const scoreColor = scoreWidth >= 75 ? '#16a34a' : scoreWidth >= 50 ? '#d97706' : '#dc2626';
+
+    // Pros list (top 3)
+    const prosList = (pick.pros || []).slice(0, 3)
+      .map(p => `<li style="margin:.15rem 0;">✅ ${escHtml(p)}</li>`).join('');
+    const consList = (pick.cons || []).slice(0, 1)
+      .map(c => `<li style="margin:.15rem 0;color:#ef4444;">⚠️ ${escHtml(c)}</li>`).join('');
+
+    const discBadge = pick.discount > 0
+      ? `<span style="background:#dcfce7;color:#15803d;border-radius:5px;padding:2px 8px;font-size:.78rem;font-weight:700;margin-left:6px;">${pick.discount}% OFF</span>`
+      : '';
+    const oldPrice = pick.discount > 0
+      ? `<span style="text-decoration:line-through;color:#9ca3af;margin-right:4px;">₹${Number(pick.price).toLocaleString()}</span>`
+      : '';
+    const reason = ai.ai_reason
+      ? `<p style="margin:.5rem 0 0;font-size:.82rem;color:#374151;line-height:1.5;">${escHtml(ai.ai_reason)}</p>`
+      : '';
+
+    const banner = `
+      <div id="aiBanner" style="background:linear-gradient(135deg,#eff6ff,#e0f2fe);border:1.5px solid #3b82f6;border-radius:14px;padding:16px 20px;margin-bottom:20px;box-shadow:0 3px 16px rgba(59,130,246,.15);">
+        <div style="display:flex;gap:14px;align-items:flex-start;">
+          <span style="font-size:2rem;line-height:1;flex-shrink:0;">🤖</span>
+          <div style="flex:1;min-width:0;">
+            <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:6px;">
+              <div style="font-weight:700;color:#1d4ed8;font-size:.95rem;">AI Best Price Recommendation</div>
+              <div style="font-size:.78rem;color:#6b7280;">Match score: <strong style="color:${scoreColor};">${scoreWidth}/100</strong></div>
+            </div>
+            <!-- Score bar -->
+            <div style="background:#dbeafe;border-radius:4px;height:5px;margin:.4rem 0 .6rem;overflow:hidden;">
+              <div style="background:${scoreColor};height:100%;width:${scoreWidth}%;border-radius:4px;transition:width .6s;"></div>
+            </div>
+            <div style="font-weight:700;color:#111827;font-size:1rem;">${escHtml(pick.title)}</div>
+            <div style="font-size:.83rem;color:#6b7280;margin:.2rem 0;">
+              <i class="bi bi-geo-alt"></i> ${escHtml(pick.source)} → ${escHtml(pick.destination)}
+              &nbsp;·&nbsp; <i class="bi bi-tag"></i> ${escHtml(pick.type)}
+            </div>
+            <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;margin:.3rem 0;">
+              ${oldPrice}
+              <span style="font-weight:800;color:#16a34a;font-size:1.1rem;">₹${Number(pick.final_price).toLocaleString()}</span>
+              ${discBadge}
+              <span style="font-size:.78rem;color:#6b7280;">· ${pick.total_seats || '?'} seats</span>
+            </div>
+            ${reason}
+            ${(prosList || consList) ? `
+              <ul style="margin:.5rem 0 0;padding-left:.2rem;list-style:none;font-size:.8rem;">
+                ${prosList}${consList}
+              </ul>` : ''}
+          </div>
+          <a href="/start-booking?type=${encodeURIComponent(pick.type || '')}&source=${encodeURIComponent(pick.source || '')}&destination=${encodeURIComponent(pick.destination || '')}&title=${encodeURIComponent(pick.title || '')}&date=${encodeURIComponent(body.date || '')}&price=${encodeURIComponent(String(pick.price != null ? pick.price : ''))}&final_price=${encodeURIComponent(String(pick.final_price != null ? pick.final_price : ''))}&discount=${encodeURIComponent(String(pick.discount != null ? pick.discount : 0))}" style="background:#2563eb;color:#fff;border-radius:9px;padding:10px 18px;font-weight:700;font-size:.9rem;white-space:nowrap;text-decoration:none;flex-shrink:0;align-self:center;box-shadow:0 2px 8px rgba(37,99,235,.3);">Book Now →</a>
+        </div>
+      </div>`;
+
+    if (grid) grid.insertAdjacentHTML('beforebegin', banner);
+  } catch (e) {
+    // Remove placeholder silently — results still show
+    const ph = document.getElementById('aiBanner');
+    if (ph) ph.remove();
+    console.warn('AI suggestion error:', e.message);
+  }
+}
+
+/* ── Render results ── */
+async function renderResults(data, type) {
+  const grid  = document.getElementById('resultsGrid');
+  const title = document.getElementById('resultsTitle');
+  const count = document.getElementById('resultsCount');
+  const q     = data.query || {};
+
+  // Build a friendly title
+  const icons = { bus:'🚌', flight:'✈️', train:'🚂', hotel:'🏨', concert:'🎵' };
+  const icon  = icons[type] || '🎟';
+  if (q.source && q.destination) {
+    title.textContent = `${icon} ${q.source} → ${q.destination} (${(q.type||'').toUpperCase()})`;
+  } else {
+    title.textContent = `${icon} ${(q.type||'').toUpperCase()} Search Results`;
+  }
+  count.textContent = `${data.count || 0} results found`;
+
+  grid.innerHTML = '';
+
+  if (!data.results || data.results.length === 0) {
+    grid.innerHTML = `
+      <div class="search-empty">
+        <i class="bi bi-search"></i>
+        <p>No results found. Try different search terms.</p>
+      </div>`;
+  } else {
+    // Preload DB tickets for this type so prices show on buttons instantly
+    const typeKey = (data.query && data.query.type || '').toUpperCase();
+    const srcKey  = (data.query && data.query.source) || '';
+    const dstKey  = (data.query && data.query.destination) || '';
+    const dateKey = (data.query && data.query.date) || '';
+    await preloadTicketsForType(typeKey, srcKey, dstKey, dateKey);
+    data.results.forEach(r => {
+      r.search_date = dateKey;
+      grid.insertAdjacentHTML('beforeend', buildCard(r));
+    });
+  }
+
+  document.getElementById('resultsSection').style.display = '';
+  document.getElementById('resultsSection').scrollIntoView({ behavior:'smooth', block:'start' });
+}
+
+// Cache: type -> list of DB tickets (fetched once per search)
+const _dbTicketCache = {};
+
+function _cacheKey(type, source = '', destination = '', date = '') {
+  return `${(type || '').toUpperCase()}|${(source || '').trim().toLowerCase()}|${(destination || '').trim().toLowerCase()}|${date || ''}`;
+}
+
+function fallbackPriceFor(type) {
+  const prices = { BUS:800, TRAIN:1200, FLIGHT:4500, HOTEL:6000, CONCERT:3000, EVENT:3000 };
+  return prices[(type || '').toUpperCase()] || 1000;
+}
+
+function buildBookingUrl(r, cheapest) {
+  const typeKey = (r.type || '').toUpperCase();
+  const bookingPrice = r.price != null
+    ? r.price
+    : (r.final_price != null ? r.final_price : (!cheapest ? fallbackPriceFor(typeKey) : ''));
+  const params = new URLSearchParams({
+    type: r.type || '',
+    source: r.source || '',
+    destination: r.destination || '',
+    title: r.title || '',
+    date: r.search_date || '',
+    price: bookingPrice !== '' ? String(bookingPrice) : '',
+    final_price: r.final_price != null ? String(r.final_price) : '',
+    discount: r.discount != null ? String(r.discount) : '',
+  });
+  return `/start-booking?${params.toString()}`;
+}
+
+async function preloadTicketsForType(type, source = '', destination = '', date = '') {
+  const key = _cacheKey(type, source, destination, date);
+  if (_dbTicketCache[key]) return; // already loaded
+  try {
+    const params = new URLSearchParams({
+      type: type || '',
+      source: source || '',
+      destination: destination || '',
+      date: date || '',
+      strict: '1',
+    });
+    const res  = await fetch(`/api/tickets-by-type?${params.toString()}`);
+    const data = await res.json();
+    // Sort cheapest first so card buttons always show the best starting price
+    _dbTicketCache[key] = (data.tickets || []).sort((a, b) => a.final_price - b.final_price);
+  } catch (e) {
+    _dbTicketCache[key] = [];
+  }
+}
+
+function buildCard(r) {
+  const featured   = r.featured ? 'featured' : '';
+  const featBadge  = r.featured ? '<span class="featured-badge">⭐ Top Result</span>' : '';
+  const rating     = r.rating   ? `<span style="color:#f59e0b;font-weight:700;">⭐ ${r.rating}</span> · ` : '';
+  const route      = (r.source && r.destination && r.source !== r.destination)
+                     ? `<div class="rc-route"><i class="bi bi-geo-alt"></i> ${r.source} <i class="bi bi-arrow-right"></i> ${r.destination}</div>`
+                     : (r.source ? `<div class="rc-route"><i class="bi bi-geo-alt"></i> ${r.source}</div>` : '');
+  const snippet    = r.snippet ? `<p class="rc-snippet">${rating}${r.snippet}</p>` : '';
+
+  // Show "from ₹X" using the cheapest ticket of this type from DB cache
+  const typeKey = (r.type || '').toUpperCase();
+  const cached  = _dbTicketCache[_cacheKey(typeKey, r.source || '', r.destination || '', r.search_date || '')] || [];
+  // Cheapest is first (cache is sorted asc by final_price in preloadTicketsForType)
+  const cheapest = cached[0];
+  const fallbackPrice = fallbackPriceFor(typeKey);
+
+  let priceLabel = '';
+  if (cheapest) {
+    const hasDiscount = cheapest.discount > 0;
+    const fromSpan = hasDiscount
+      ? `<span style="text-decoration:line-through;opacity:.6;font-size:.78rem;margin-right:2px;">₹${Number(cheapest.price).toLocaleString()}</span>`
+      : '';
+    const discSpan = hasDiscount
+      ? `<span style="background:rgba(255,255,255,.28);border-radius:4px;padding:0 5px;font-size:.73rem;margin-left:3px;">${cheapest.discount}% OFF</span>`
+      : '';
+    const fromLabel = cached.length > 1 ? 'from ' : '';
+    priceLabel = ` · ${fromSpan}<strong>${fromLabel}₹${Number(cheapest.final_price).toLocaleString()}</strong>${discSpan}`;
+  }
+
+  // Override with per-result Serper price when available.
+  if (typeof r.final_price === 'number' || typeof r.price === 'number') {
+    const rawPrice = Number(r.price || r.final_price || 0);
+    const disc = Number(r.discount || 0);
+    const finalP = Number(r.final_price || (rawPrice * (1 - disc / 100)));
+    const hasDiscount = disc > 0 && rawPrice > finalP;
+    const fromSpan = hasDiscount
+      ? `<span style="text-decoration:line-through;opacity:.6;font-size:.78rem;margin-right:2px;">₹${rawPrice.toLocaleString()}</span>`
+      : '';
+    const discSpan = hasDiscount
+      ? `<span style="background:rgba(255,255,255,.28);border-radius:4px;padding:0 5px;font-size:.73rem;margin-left:3px;">${disc}% OFF</span>`
+      : '';
+    priceLabel = ` · ${fromSpan}<strong>₹${Math.round(finalP).toLocaleString()}</strong>${discSpan}`;
+  }
+
+  // Live snippets can omit fares; keep every ticket type bookable like flight cards.
+  if (!priceLabel) {
+    priceLabel = ` · <strong>₹${Number(fallbackPrice).toLocaleString()}</strong>`;
+  }
+
+  const bookingUrl = buildBookingUrl(r, cheapest);
+  const btnHtml = `<a class="rc-link" href="${bookingUrl}"><i class="bi bi-ticket-perforated"></i> Book on TicketHub${priceLabel}</a>`;
+
+  return `
+    <div class="result-card ${featured}">
+      <div class="rc-banner" style="background:${r.color || 'linear-gradient(135deg,#4b5563,#9ca3af)'}">
+        <span class="rc-icon">${r.icon || '🎟'}</span>
+        ${featBadge}
+      </div>
+      <div class="rc-body">
+        <div class="rc-type">${r.type || ''}</div>
+        <h3 class="rc-title">${escHtml(r.title || 'Result')}</h3>
+        ${route}
+        ${snippet}
+        <div class="rc-footer">${btnHtml}</div>
+      </div>
+    </div>`;
+}
+
+function escHtml(str) {
+  return str.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+function escAttr(str) {
+  return (str||'').replace(/'/g,"\\'").replace(/"/g,'&quot;');
+}
+
+/* ── Book on TicketHub Modal ── */
+async function openBookModal(type, source, destination) {
+  const modal     = document.getElementById('bookModal');
+  const modalBody = document.getElementById('bookModalBody');
+  const modalTitle = document.getElementById('bookModalTitle');
+
+  const icons = { BUS:'🚌', FLIGHT:'✈️', TRAIN:'🚂', HOTEL:'🏨', CONCERT:'🎵' };
+  modalTitle.textContent = `${icons[type]||'🎟'} Available ${type} Tickets`;
+  modalBody.innerHTML = `<div style="text-align:center;padding:2rem;color:#6b7280;"><i class="bi bi-hourglass-split" style="font-size:2rem;"></i><p>Finding tickets…</p></div>`;
+  modal.style.display = 'flex';
+
+  try {
+    const params = new URLSearchParams({
+      type: type || '',
+      source: source || '',
+      destination: destination || '',
+      strict: '1',
+    });
+    const res = await fetch(`/api/tickets-by-type?${params.toString()}`);
+    const data = await res.json();
+    let tickets = (data.tickets || []).sort((a, b) => a.final_price - b.final_price);
+
+    // Fallback: if exact route inventory is unavailable, show same-type TicketHub inventory.
+    if (tickets.length === 0) {
+      const fallbackParams = new URLSearchParams({
+        type: type || '',
+        strict: '0',
+      });
+      const fallbackRes = await fetch(`/api/tickets-by-type?${fallbackParams.toString()}`);
+      const fallbackData = await fallbackRes.json();
+      tickets = (fallbackData.tickets || []).sort((a, b) => a.final_price - b.final_price);
+    }
+
+    if (tickets.length === 0) {
+      modalBody.innerHTML = `
+        <div style="text-align:center;padding:2rem;color:#6b7280;">
+          <i class="bi bi-ticket-x" style="font-size:2.5rem;color:#f59e0b;"></i>
+          <p style="margin-top:.75rem;font-weight:600;">No tickets available right now</p>
+          <p style="font-size:.85rem;">No ${type} inventory exists in TicketHub yet. Ask admin to add ${type} tickets.</p>
+          <a href="/dashboard" class="modal-book-btn" style="margin-top:1rem;display:inline-block;">Browse All Tickets</a>
+        </div>`;
+      return;
+    }
+
+    // Show summary header
+    const minPrice = tickets[0].final_price;
+    const maxPrice = tickets[tickets.length - 1].final_price;
+    const priceRange = tickets.length > 1
+      ? `<div style="font-size:.82rem;color:#6b7280;margin-bottom:.75rem;padding-bottom:.75rem;border-bottom:1px solid #f3f4f6;">
+           ${tickets.length} tickets available · Price range: <strong style="color:#16a34a;">₹${minPrice.toLocaleString()}</strong> – <strong>₹${maxPrice.toLocaleString()}</strong>
+         </div>`
+      : '';
+
+    modalBody.innerHTML = priceRange + tickets.map((t, i) => {
+      const isCheapest = i === 0 && tickets.length > 1;
+      const badge = isCheapest
+        ? `<span style="background:#fef9c3;color:#854d0e;border-radius:5px;padding:1px 7px;font-size:.72rem;font-weight:700;margin-left:6px;">💰 Best Price</span>`
+        : '';
+      return `
+      <div class="modal-ticket-card" style="${isCheapest ? 'border-color:#16a34a;background:#f0fdf4;' : ''}">
+        <div class="modal-ticket-info">
+          <div class="modal-ticket-title">${escHtml(t.title)} ${badge}</div>
+          <div class="modal-ticket-route"><i class="bi bi-geo-alt"></i> ${escHtml(t.source)} → ${escHtml(t.destination)}</div>
+          <div class="modal-ticket-meta">
+            ${t.discount > 0
+              ? `<span class="modal-price-old">₹${Number(t.price).toLocaleString()}</span>
+                 <span class="modal-price-final">₹${Number(t.final_price).toLocaleString()}</span>
+                 <span class="modal-discount-badge">${t.discount}% OFF</span>`
+              : `<span class="modal-price-final">₹${Number(t.price).toLocaleString()}</span>`}
+            <span class="modal-seats"><i class="bi bi-people"></i> ${t.total_seats} seats</span>
+          </div>
+        </div>
+        <a href="/seat-selection/${t.id}" class="modal-book-btn">Book Now →</a>
+      </div>`;
+    }).join('');
+
+  } catch(err) {
+    modalBody.innerHTML = `<p style="color:red;padding:1rem;">Error loading tickets: ${err.message}</p>`;
+  }
+}
+
+function closeBookModal() {
+  document.getElementById('bookModal').style.display = 'none';
+}
+
+function initAutofillFromQuery() {
+  const qs = new URLSearchParams(window.location.search);
+  if (qs.get('autofill') !== '1') return;
+
+  const type = (qs.get('type') || '').toLowerCase();
+  const source = qs.get('source') || '';
+  const destination = qs.get('destination') || '';
+  const keyword = qs.get('keyword') || '';
+  const date = qs.get('date') || todayISO();
+  const autorun = qs.get('autorun') === '1';
+  const supported = ['bus', 'flight', 'train', 'hotel', 'concert'];
+  if (!supported.includes(type)) return;
+
+  const tab = document.querySelector(`.sw-tab[data-type="${type}"]`);
+  if (tab) switchTab(tab);
+
+  if (type === 'bus' || type === 'flight' || type === 'train') {
+    const fromInput = document.getElementById(`${type}-from`);
+    const toInput = document.getElementById(`${type}-to`);
+    const dateInput = document.getElementById(`${type}-date`);
+    if (fromInput) fromInput.value = source;
+    if (toInput) toInput.value = destination;
+    if (dateInput) dateInput.value = date;
+  } else if (type === 'hotel') {
+    const cityInput = document.getElementById('hotel-city');
+    const dateInput = document.getElementById('hotel-checkin');
+    if (cityInput) cityInput.value = destination || source;
+    if (dateInput) dateInput.value = date;
+  } else if (type === 'concert') {
+    const keywordInput = document.getElementById('concert-keyword');
+    const cityInput = document.getElementById('concert-city');
+    const dateInput = document.getElementById('concert-date');
+    if (keywordInput) keywordInput.value = keyword || source;
+    if (cityInput) cityInput.value = destination;
+    if (dateInput) dateInput.value = date;
+  }
+
+  if (autorun) doSearch(type);
+}
+
+/* ── Enter key on inputs ── */
+document.addEventListener('keydown', e => {
+  if (e.key === 'Enter' && e.target.tagName === 'INPUT') {
+    doSearch(currentTab);
+  }
+  if (e.key === 'Escape') closeBookModal();
+});
+
+setupDateInputs();
+initAutofillFromQuery();
+</script>
+
+<!-- ── Booking Modal ── -->
+<div id="bookModal" style="display:none;position:fixed;inset:0;z-index:9999;align-items:center;justify-content:center;background:rgba(0,0,0,.55);padding:1rem;">
+  <div style="background:#fff;border-radius:16px;width:100%;max-width:560px;max-height:85vh;display:flex;flex-direction:column;box-shadow:0 20px 60px rgba(0,0,0,.3);overflow:hidden;">
+    <!-- Header -->
+    <div style="display:flex;align-items:center;justify-content:space-between;padding:1.25rem 1.5rem;border-bottom:1px solid #e5e7eb;background:linear-gradient(135deg,#1e3a5f,#2563eb);">
+      <h3 id="bookModalTitle" style="margin:0;color:#fff;font-size:1.1rem;font-weight:700;"></h3>
+      <button onclick="closeBookModal()" style="background:rgba(255,255,255,.2);border:none;color:#fff;border-radius:50%;width:32px;height:32px;font-size:1.1rem;cursor:pointer;display:flex;align-items:center;justify-content:center;">&times;</button>
+    </div>
+    <!-- Body -->
+    <div id="bookModalBody" style="overflow-y:auto;padding:1.25rem;display:flex;flex-direction:column;gap:.9rem;"></div>
+  </div>
+</div>
+
+<style>
+.modal-ticket-card {
+  display:flex;align-items:center;justify-content:space-between;gap:1rem;
+  border:1.5px solid #e5e7eb;border-radius:12px;padding:1rem 1.1rem;
+  transition:border-color .2s,box-shadow .2s;
+}
+.modal-ticket-card:hover { border-color:#2563eb;box-shadow:0 4px 16px rgba(37,99,235,.12); }
+.modal-ticket-info { flex:1; }
+.modal-ticket-title { font-weight:700;font-size:.95rem;color:#111827;margin-bottom:.25rem; }
+.modal-ticket-route { font-size:.82rem;color:#6b7280;margin-bottom:.4rem; }
+.modal-ticket-meta  { display:flex;align-items:center;gap:.6rem;flex-wrap:wrap;font-size:.83rem; }
+.modal-price-old    { text-decoration:line-through;color:#9ca3af; }
+.modal-price-final  { font-weight:800;color:#16a34a;font-size:1rem; }
+.modal-discount-badge { background:#dcfce7;color:#15803d;border-radius:6px;padding:2px 7px;font-size:.75rem;font-weight:700; }
+.modal-seats        { color:#6b7280; }
+.modal-book-btn {
+  background:linear-gradient(135deg,#f97316,#ea580c);
+  color:#fff;border:none;border-radius:10px;
+  padding:.55rem 1.1rem;font-weight:700;font-size:.85rem;
+  cursor:pointer;text-decoration:none;white-space:nowrap;
+  transition:opacity .2s;
+}
+.modal-book-btn:hover { opacity:.88;color:#fff; }
+.rc-link {
+  background:linear-gradient(135deg,#f97316,#ea580c);
+  color:#fff;border:none;border-radius:10px;
+  padding:.6rem 1.2rem;font-weight:700;font-size:.85rem;
+  cursor:pointer;text-decoration:none;white-space:nowrap;
+  width:100%;display:block;text-align:center;
+  transition:opacity .2s;
+}
+.rc-link:hover { opacity:.88;color:#fff; }
+</style>
+</body>
+</html>
+

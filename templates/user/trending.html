@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1"/>
+  <title>Trending Destinations — TicketHub</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.0/font/bootstrap-icons.css"/>
+  <link rel="preconnect" href="https://fonts.googleapis.com"/>
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet"/>
+  <style>
+    :root{
+      --navy:#1a0050; --blue:#1a4fc4; --purple:#3a00a0; --accent:#c0a0ff;
+      --text:#1a1a2e; --muted:#6c757d; --card-bg:#fff; --bg:#f8f6ff;
+    }
+    *{box-sizing:border-box;margin:0;padding:0;}
+    body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--text);}
+
+    /* NAV */
+    nav{background:linear-gradient(135deg,var(--navy),var(--blue));padding:14px 32px;display:flex;align-items:center;justify-content:space-between;}
+    .nav-brand{color:#fff;font-family:'Playfair Display',serif;font-size:1.4rem;text-decoration:none;}
+    .nav-links a{color:rgba(255,255,255,0.8);text-decoration:none;margin-left:20px;font-size:14px;font-weight:500;transition:color .2s;}
+    .nav-links a:hover{color:#fff;}
+
+    /* HERO */
+    .hero{background:linear-gradient(135deg,var(--navy) 0%,var(--purple) 50%,var(--blue) 100%);padding:56px 32px;text-align:center;position:relative;overflow:hidden;}
+    .hero::before,.hero::after{content:'';position:absolute;border-radius:50%;background:rgba(255,255,255,0.05);}
+    .hero::before{width:400px;height:400px;top:-100px;right:-80px;}
+    .hero::after{width:300px;height:300px;bottom:-80px;left:-60px;}
+    .hero h1{color:#fff;font-family:'Playfair Display',serif;font-size:2.2rem;margin-bottom:12px;position:relative;}
+    .hero p{color:var(--accent);font-size:1rem;max-width:500px;margin:0 auto;position:relative;}
+    .hero-badge{display:inline-block;background:rgba(255,255,255,0.12);border:1px solid rgba(255,255,255,0.25);color:var(--accent);padding:5px 16px;border-radius:30px;font-size:12px;font-weight:600;letter-spacing:1px;margin-bottom:14px;}
+
+    /* MAIN */
+    .container{max-width:1100px;margin:0 auto;padding:0 24px;}
+    .section{padding:52px 0;}
+
+    /* FILTER BAR */
+    .filter-bar{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:32px;align-items:center;}
+    .filter-btn{padding:8px 18px;border-radius:30px;border:1.5px solid #d0c0ff;background:#fff;color:var(--purple);font-size:13px;font-weight:600;cursor:pointer;transition:all .2s;}
+    .filter-btn.active,.filter-btn:hover{background:var(--purple);color:#fff;border-color:var(--purple);}
+    .filter-label{font-size:13px;color:var(--muted);font-weight:500;margin-right:4px;}
+
+    /* LOCATION CARDS */
+    .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:24px;}
+    .loc-card{background:#fff;border-radius:16px;overflow:hidden;box-shadow:0 2px 16px rgba(58,0,160,0.07);transition:transform .2s,box-shadow .2s;}
+    .loc-card:hover{transform:translateY(-4px);box-shadow:0 8px 30px rgba(58,0,160,0.13);}
+    .loc-card.featured{grid-column:span 2;border:2px solid var(--purple);}
+    .loc-img{width:100%;height:175px;object-fit:cover;background:linear-gradient(135deg,#2d0080,#1a4fc4);}
+    .loc-img-placeholder{width:100%;height:175px;display:flex;align-items:center;justify-content:center;font-size:56px;background:linear-gradient(135deg,#2d0080 0%,#1a4fc4 100%);}
+    .loc-body{padding:18px 20px;}
+    .loc-badge{display:inline-block;padding:3px 10px;background:#f0e8ff;color:var(--purple);border-radius:20px;font-size:11px;font-weight:700;margin-bottom:10px;text-transform:uppercase;letter-spacing:.5px;}
+    .loc-badge.featured{background:linear-gradient(135deg,var(--purple),var(--blue));color:#fff;}
+    .loc-name{font-size:1.1rem;font-weight:700;color:var(--navy);margin-bottom:6px;}
+    .loc-desc{font-size:13.5px;color:var(--muted);line-height:1.6;margin-bottom:12px;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden;}
+    .loc-meta{display:flex;gap:14px;margin-bottom:14px;}
+    .loc-meta-item{font-size:12px;color:#555;display:flex;align-items:center;gap:4px;}
+    .stars{color:#f59e0b;}
+    .loc-btn{display:inline-block;padding:8px 18px;background:linear-gradient(135deg,var(--purple),var(--blue));color:#fff;border-radius:30px;font-size:13px;font-weight:600;text-decoration:none;transition:opacity .2s;}
+    .loc-btn:hover{opacity:.88;color:#fff;}
+
+    /* LOADING */
+    .loading{text-align:center;padding:60px 0;}
+    .spinner{width:44px;height:44px;border:4px solid #e0d8ff;border-top-color:var(--purple);border-radius:50%;animation:spin .8s linear infinite;margin:0 auto 14px;}
+    @keyframes spin{to{transform:rotate(360deg);}}
+
+    /* POWERED BY */
+    .powered-bar{background:linear-gradient(135deg,var(--navy),var(--purple));color:#c0a0ff;font-size:12px;text-align:center;padding:10px;letter-spacing:.5px;}
+
+    /* RESPONSIVE */
+    @media(max-width:680px){.loc-card.featured{grid-column:span 1;}.hero h1{font-size:1.6rem;}}
+  </style>
+</head>
+<body>
+
+<!-- NAV -->
+<nav>
+  <a href="/" class="nav-brand">🎟 TicketHub</a>
+  <div class="nav-links">
+    <a href="/dashboard"><i class="bi bi-speedometer2"></i> Dashboard</a>
+    <a href="/search"><i class="bi bi-search"></i> Search</a>
+    <a href="/logout"><i class="bi bi-box-arrow-right"></i> Logout</a>
+  </div>
+</nav>
+
+<!-- HERO -->
+<section class="hero">
+  <div class="hero-badge">✨ AI-POWERED • LIVE DATA</div>
+  <h1>🌏 Trending Destinations</h1>
+  <p>Discover the hottest tourist spots — curated in real-time by AI from across the web</p>
+</section>
+
+<!-- MAIN CONTENT -->
+<section class="section">
+  <div class="container">
+
+    <!-- Filter Bar -->
+    <div class="filter-bar">
+      <span class="filter-label">Filter:</span>
+      <button class="filter-btn active" onclick="filterCards('all',this)">All</button>
+      <button class="filter-btn" onclick="filterCards('featured',this)">⭐ Featured</button>
+      <button class="filter-btn" onclick="filterCards('4.5',this)">4.5+ Rating</button>
+      <button class="filter-btn" onclick="filterCards('winter',this)">❄️ Winter Pick</button>
+    </div>
+
+    <!-- Loading state -->
+    <div class="loading" id="loadingState">
+      <div class="spinner"></div>
+      <p style="color:var(--muted);font-size:14px;">Fetching trending destinations…</p>
+    </div>
+
+    <!-- Grid -->
+    <div class="grid" id="locGrid" style="display:none;"></div>
+
+    <!-- Error state -->
+    <div id="errorState" style="display:none;text-align:center;padding:40px;">
+      <div style="font-size:48px;margin-bottom:12px;">😕</div>
+      <p style="color:var(--muted);">Could not load trending data. <a href="javascript:loadLocations()" style="color:var(--purple);font-weight:600;">Retry</a></p>
+    </div>
+
+  </div>
+</section>
+
+<div class="powered-bar">⚡ Powered by Serper API — Real-time Google Search results &nbsp;|&nbsp; TicketHub © 2025</div>
+
+<script>
+let allLocations = [];
+
+const placeEmojis = ['🏖','🏔','🌴','🕌','🏯','🌆','🌊','🌿','🏝','🗺','🌄','🎡'];
+
+function getEmoji(name, i) {
+  const n = name.toLowerCase();
+  if(n.includes('goa')||n.includes('beach')||n.includes('coastal')) return '🏖';
+  if(n.includes('hill')||n.includes('mountain')||n.includes('manali')||n.includes('shimla')) return '🏔';
+  if(n.includes('kerala')||n.includes('backwater')) return '🌴';
+  if(n.includes('jaipur')||n.includes('rajasthan')||n.includes('fort')) return '🏯';
+  if(n.includes('mumbai')||n.includes('delhi')||n.includes('city')) return '🌆';
+  if(n.includes('varanasi')||n.includes('temple')) return '🕌';
+  return placeEmojis[i % placeEmojis.length];
+}
+
+function starHtml(rating) {
+  const full  = Math.floor(rating);
+  const half  = rating % 1 >= 0.5 ? 1 : 0;
+  const empty = 5 - full - half;
+  return '<span class="stars">' +
+    '★'.repeat(full) + (half?'½':'') + '<span style="color:#ddd;">' + '★'.repeat(empty) + '</span></span> ' +
+    `<span style="font-weight:600;color:#333;">${rating.toFixed(1)}</span>`;
+}
+
+function renderCard(loc, idx) {
+  const isFeatured = loc.featured || idx === 0;
+  const emoji = getEmoji(loc.name, idx);
+  const imgHtml = loc.image
+    ? `<img src="${loc.image}" alt="${loc.name}" class="loc-img" onerror="this.outerHTML='<div class=\\'loc-img-placeholder\\'>${emoji}</div>'">`
+    : `<div class="loc-img-placeholder">${emoji}</div>`;
+
+  const card = document.createElement('div');
+  card.className = 'loc-card' + (isFeatured ? ' featured' : '');
+  card.dataset.rating = loc.rating;
+  card.dataset.featured = isFeatured ? 'true' : 'false';
+  card.dataset.season = (loc.best_time||'').toLowerCase().includes('oct')||
+                        (loc.best_time||'').toLowerCase().includes('nov')||
+                        (loc.best_time||'').toLowerCase().includes('dec') ? 'winter' : 'other';
+
+  card.innerHTML = `
+    ${imgHtml}
+    <div class="loc-body">
+      <div class="loc-badge ${isFeatured?'featured':''}">${isFeatured?'⭐ FEATURED':'📍 DESTINATION'}</div>
+      <div class="loc-name">${emoji} ${loc.name}</div>
+      <div class="loc-desc">${loc.description||'A beautiful destination worth exploring.'}</div>
+      <div class="loc-meta">
+        <div class="loc-meta-item">${starHtml(loc.rating||4.0)}</div>
+        <div class="loc-meta-item"><i class="bi bi-calendar3" style="color:var(--purple);"></i> Best: ${loc.best_time||'Oct–Mar'}</div>
+      </div>
+      <a href="/dashboard" class="loc-btn"><i class="bi bi-ticket-perforated"></i> Book Trip</a>
+      ${loc.link ? `<a href="${loc.link}" target="_blank" style="margin-left:10px;font-size:13px;color:var(--muted);text-decoration:none;"><i class="bi bi-box-arrow-up-right"></i> More info</a>` : ''}
+    </div>`;
+  return card;
+}
+
+function renderGrid(locations) {
+  const grid = document.getElementById('locGrid');
+  grid.innerHTML = '';
+  locations.forEach((loc, i) => grid.appendChild(renderCard(loc, i)));
+  document.getElementById('loadingState').style.display = 'none';
+  grid.style.display = 'grid';
+}
+
+function filterCards(type, btn) {
+  document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  let filtered = allLocations;
+  if (type === 'featured') filtered = allLocations.filter(l => l.featured || allLocations.indexOf(l) === 0);
+  else if (type === '4.5')  filtered = allLocations.filter(l => (l.rating||0) >= 4.5);
+  else if (type === 'winter') filtered = allLocations.filter(l =>
+    (l.best_time||'').toLowerCase().match(/oct|nov|dec|jan|feb/));
+  renderGrid(filtered.length ? filtered : allLocations);
+}
+
+async function loadLocations() {
+  document.getElementById('loadingState').style.display = 'block';
+  document.getElementById('locGrid').style.display = 'none';
+  document.getElementById('errorState').style.display = 'none';
+  try {
+    const res  = await fetch('/ai/trending-locations');
+    const data = await res.json();
+    allLocations = data.locations || [];
+    if (allLocations.length === 0) throw new Error('No locations returned');
+    renderGrid(allLocations);
+  } catch(e) {
+    document.getElementById('loadingState').style.display = 'none';
+    document.getElementById('errorState').style.display = 'block';
+  }
+}
+
+loadLocations();
+</script>
+</body>
+</html>

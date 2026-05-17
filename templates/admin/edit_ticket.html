@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"><title>TicketHub Admin</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons/font/bootstrap-icons.css" rel="stylesheet">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+<div class="admin-topbar">
+  <div class="container" style="display:flex;justify-content:space-between;align-items:center;height:64px;">
+    <span class="admin-nav-logo">🎟 Ticket<span>Hub</span></span>
+    <a href="/admin/dashboard" class="btn-outline" style="color:#fff;border-color:rgba(255,255,255,0.3);padding:7px 14px;font-size:13px;">← Dashboard</a>
+  </div>
+</div>
+<div style="background:var(--cream);min-height:calc(100vh - 64px);padding:40px 0;">
+<div class="container">
+  <div style="max-width:600px;margin:0 auto;">
+    <div class="card card-body">
+      <span class="section-label">Admin</span>
+      <h2 class="font-serif" style="color:var(--navy);margin:6px 0 24px;">Edit Ticket</h2>
+      {% if ticket %}
+      <form method="POST">
+        <div class="form-group">
+          <label class="form-label">Ticket Type</label>
+          <select name="type" class="form-select" required>
+            {% for t in ['BUS','TRAIN','FLIGHT','HOTEL','CONCERT'] %}
+            <option value="{{ t }}" {% if ticket.type==t %}selected{% endif %}>{{ t }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="form-group"><label class="form-label">Title</label><input type="text" name="title" class="form-control" value="{{ ticket.title }}" required></div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;">
+          <div class="form-group"><label class="form-label">Source</label><input type="text" name="source" class="form-control" value="{{ ticket.source }}" required></div>
+          <div class="form-group"><label class="form-label">Destination</label><input type="text" name="destination" class="form-control" value="{{ ticket.destination }}" required></div>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Travel / Event Date</label>
+          <input type="date" name="travel_date" class="form-control date-min-today" value="{{ ticket.travel_date or '' }}" required>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px;margin-bottom:24px;">
+          <div class="form-group"><label class="form-label">Price (₹)</label><input type="number" name="price" class="form-control" value="{{ ticket.price }}" required></div>
+          <div class="form-group"><label class="form-label">Discount (%)</label><input type="number" name="discount" class="form-control" value="{{ ticket.discount }}" min="0" max="100"></div>
+          <div class="form-group"><label class="form-label">Total Seats</label><input type="number" name="total_seats" class="form-control" value="{{ ticket.total_seats }}" min="1"></div>
+        </div>
+        <button type="submit" class="btn-primary" style="width:100%;justify-content:center;padding:13px;"><i class="bi bi-pencil-square"></i> Update Ticket</button>
+      </form>
+      {% else %}
+      <p style="color:var(--text-muted);text-align:center;padding:20px 0;">Ticket not found.</p>
+      <a href="/admin/dashboard" class="btn-outline">← Go back</a>
+      {% endif %}
+    </div>
+  </div>
+</div>
+</div>
+<script>
+const today = new Date().toISOString().slice(0, 10);
+document.querySelectorAll('.date-min-today').forEach(input => {
+  input.min = today;
+  if (!input.value || input.value < today) input.value = today;
+});
+</script>
+</body>
+</html>

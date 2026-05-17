@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Login | TicketHub</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons/font/bootstrap-icons.css" rel="stylesheet">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+<div class="auth-page">
+  <div class="auth-left-panel">
+    <div class="auth-left-text">
+      <img src="{{ url_for('static', filename='images/Secure login-pana.svg') }}" alt="Login">
+      <h2>Welcome Back!</h2>
+      <p>Your next adventure is just one click away.</p>
+    </div>
+  </div>
+  <div class="auth-right-panel">
+    <div class="auth-card">
+      <span class="auth-brand">🎟 Ticket<span>Hub</span></span>
+      <h2 class="auth-title">Sign In</h2>
+      <p class="auth-sub">Enter your credentials to access your account</p>
+
+      {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}{% for cat, msg in messages %}
+      <div class="alert alert-{{ cat }}"><i class="bi bi-info-circle"></i> {{ msg }}<button class="btn-close" onclick="this.parentElement.remove()">×</button></div>
+      {% endfor %}{% endif %}{% endwith %}
+
+      <form action="/login" method="POST">
+        <div class="form-group">
+          <label>Email Address</label>
+          <div class="input-icon">
+            <i class="bi bi-envelope"></i>
+            <input type="email" name="email" class="form-input" placeholder="your@email.com" required>
+          </div>
+        </div>
+        <div class="form-group">
+          <label>Password</label>
+          <div class="input-icon">
+            <i class="bi bi-lock"></i>
+            <input type="password" name="password" class="form-input" placeholder="••••••••" required>
+          </div>
+        </div>
+        <div style="text-align:right;margin-bottom:20px;">
+          <a href="/forgot-password" class="auth-link" style="font-size:13px;">Forgot Password?</a>
+        </div>
+        <button type="submit" class="btn-auth">
+          <i class="bi bi-box-arrow-in-right me-2"></i> Sign In
+        </button>
+      </form>
+      {% if google_oauth_enabled %}
+      <div style="margin-top:12px;">
+        <a href="/auth/google/login" class="btn-auth" style="display:flex;justify-content:center;align-items:center;text-decoration:none;background:#ffffff;color:#111827;border:1px solid #d1d5db;">
+          <i class="bi bi-google" style="margin-right:8px;"></i> Sign in with Google
+        </a>
+      </div>
+      {% endif %}
+      <div class="auth-divider"><hr><span>Don't have an account?</span><hr></div>
+      <p style="text-align:center;font-size:14px;">New to TicketHub? <a href="/signup" class="auth-link">Create Account →</a></p>
+    </div>
+  </div>
+</div>
+</body>
+</html>

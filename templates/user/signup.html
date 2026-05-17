@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Register | TicketHub</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons/font/bootstrap-icons.css" rel="stylesheet">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+<div class="auth-page">
+  <div class="auth-left-panel">
+    <div class="auth-left-text">
+      <img src="{{ url_for('static', filename='images/Sign up-cuate.svg') }}" alt="Sign Up">
+      <h2>Join TicketHub</h2>
+      <p>Book smarter, travel further. Sign up free today.</p>
+    </div>
+  </div>
+  <div class="auth-right-panel">
+    <div class="auth-card">
+      <span class="auth-brand">🎟 Ticket<span>Hub</span></span>
+      <h2 class="auth-title">Create Account</h2>
+      <p class="auth-sub">Fill in your details to get started</p>
+
+      {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}{% for cat, msg in messages %}
+      <div class="alert alert-{{ cat }}"><i class="bi bi-info-circle"></i> {{ msg }}<button class="btn-close" onclick="this.parentElement.remove()">×</button></div>
+      {% endfor %}{% endif %}{% endwith %}
+
+      <form action="/signup" method="POST">
+        <div class="form-group">
+          <label>Full Name</label>
+          <div class="input-icon">
+            <i class="bi bi-person"></i>
+            <input type="text" name="name" class="form-input" placeholder="John Doe" required>
+          </div>
+        </div>
+        <div class="form-group">
+          <label>Email Address</label>
+          <div class="input-icon">
+            <i class="bi bi-envelope"></i>
+            <input type="email" name="email" class="form-input" placeholder="your@email.com" required>
+          </div>
+        </div>
+        <div class="form-group">
+          <label>Password</label>
+          <div class="input-icon">
+            <i class="bi bi-lock"></i>
+            <input type="password" name="password" class="form-input" placeholder="Min. 8 characters" required>
+          </div>
+        </div>
+        <div class="form-group" style="margin-bottom:24px;">
+          <label>Confirm Password</label>
+          <div class="input-icon">
+            <i class="bi bi-shield-lock"></i>
+            <input type="password" name="confirm_password" class="form-input" placeholder="Re-enter password" required>
+          </div>
+        </div>
+        <button type="submit" class="btn-auth">
+          <i class="bi bi-person-plus me-2"></i> Create Account
+        </button>
+      </form>
+      {% if google_oauth_enabled %}
+      <div style="margin-top:12px;">
+        <a href="/auth/google/login" class="btn-auth" style="display:flex;justify-content:center;align-items:center;text-decoration:none;background:#ffffff;color:#111827;border:1px solid #d1d5db;">
+          <i class="bi bi-google" style="margin-right:8px;"></i> Create account with Google
+        </a>
+      </div>
+      {% endif %}
+      <div class="auth-divider"><hr><span>Already have an account?</span><hr></div>
+      <p style="text-align:center;font-size:14px;"><a href="/login" class="auth-link">Sign In →</a></p>
+    </div>
+  </div>
+</div>
+</body>
+</html>
